@@ -9,6 +9,7 @@ mean temperatures from the Government of Canada's climate data service.
 Run from the repository folder: python balance.py
 """
 from pathlib import Path
+import datetime as dt
 import io
 import time
 import urllib.request
@@ -59,7 +60,7 @@ def bc(table, *columns):
     for column, value in columns[:-1]:
         t = t[t[column] == value]
     wide = t.pivot(index="REF_DATE", columns=columns[-1], values="VALUE")
-    return wide.set_axis(pd.PeriodIndex(wide.index, freq="M"))
+    return wide.set_axis(pd.PeriodIndex(wide.index.astype(str), freq="M"))  # annual tables give years as numbers
 
 
 def balance():
@@ -97,6 +98,64 @@ def trade():
                          "import_gwh": sums["Energy (MW.h)", "Imports"] / 1e3,
                          "export_value": sums["Total Value (CAN$)", "Exports"] / 1e6,
                          "import_value": sums["Total Value (CAN$)", "Imports"] / 1e6})
+
+
+def capacity():
+    """BC's installed generating capacity at year end, MW by type (2012 is not published)."""
+    cap = bc(statcan("25100022"), ("Class of electricity producer", "Total all classes of electricity producer"),
+             "Type of electricity generation")
+    return cap.set_axis(cap.index.year) / 1000
+
+
+def fuel_generation():
+    """BC's annual generation from all combustible fuels (gas, oil and biomass; published from 2016) and from
+    fossil fuels alone (from 2020), TWh."""
+    g = bc(statcan("25100015"), ("Class of electricity producer", "Total all classes of electricity producer"),
+           "Type of electricity generation")
+    year = g.groupby(g.index.year).sum(min_count=12) / 1e6
+    return pd.DataFrame({"thermal_twh": year["Total electricity production from combustible fuels"],
+                         "fossil_twh": year["Total electricity production from non-renewable combustible fuels"]})
+
+
+def capacity_factor(twh, mw):
+    """Output as a share of what the capacity would produce running all year."""
+    hours = pd.Series([8784 if y % 4 == 0 else 8760 for y in twh.index], index=twh.index)
+    return twh * 1e6 / (mw * hours)
+
+
+# Data: hourly flows with the United States ----
+# The US Energy Information Administration's Form EIA-930 files, one per half-year, give each US balancing
+# authority's hourly flow with its neighbours. BC Hydro's only reported US neighbour is the Bonneville Power
+# Administration; before 10 May 2017 its rows are placeholder zeros. Past half-years are kept in the repository
+# (flows/), so a run downloads only the later files, about 100 MB each.
+EIA = "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_INTERCHANGE_{}_{}.csv"
+FLOWS = Path("flows") / "bc_us_hourly.csv.gz"
+FLOWS_START = "2017-05-10"
+TIME = "%m/%d/%Y %I:%M:%S %p"
+
+
+def eia_rows(path):
+    """MW into BC each hour from one EIA-930 interchange file (negative: out of BC), indexed by UTC hour ending,
+    with the Pacific hour ending. The US side reports, and a positive flow is out of the US balancing authority."""
+    t = pd.read_csv(path, thousands=",", dtype={"Interchange (MW)": float}, usecols=[
+        "Directly Interconnected Balancing Authority", "Interchange (MW)", "Local Time at End of Hour",
+        "UTC Time at End of Hour"])
+    t = t[t["Directly Interconnected Balancing Authority"] == "BCHA"]
+    t = pd.DataFrame({"local": pd.to_datetime(t["Local Time at End of Hour"], format=TIME).to_numpy(),
+                      "mw": t["Interchange (MW)"].to_numpy()},
+                     index=pd.to_datetime(t["UTC Time at End of Hour"], format=TIME).rename("utc"))
+    return pd.DataFrame({"local": t.local.groupby(level=0).first(), "mw": t.mw.groupby(level=0).sum(min_count=1)})
+
+
+def flows(today=None):
+    """BC's hourly flows with the United States: the stored past half-years plus every later one to today."""
+    past = pd.read_csv(FLOWS, index_col="utc", parse_dates=["utc", "local"])
+    months = pd.period_range(past.index.max().to_period("M"), pd.Timestamp(today or dt.date.today()), freq="M")
+    halves = sorted({(m.year, "Jan_Jun" if m.month <= 6 else "Jul_Dec") for m in months})
+    new = [eia_rows(cached(EIA.format(year, half), f"eia_{year}_{half}.csv")) for year, half in halves]
+    f = pd.concat([past, *new])
+    f = f[~f.index.duplicated(keep="last")].sort_index()  # a newer file replaces stored hours it repeats
+    return f[f.local > FLOWS_START]  # from the first hour of 10 May 2017
 
 
 # Data: temperature ----
@@ -280,6 +339,37 @@ def temperature_effect(d):
     return pd.concat(out, axis=1), fit
 
 
+# Hourly flows ----
+FLOWS_BASELINE = (2018, 2022)  # the full years before the drought
+EVENING, OVERNIGHT = range(17, 21), range(0, 6)  # hours beginning 5-9 pm and midnight-6 am, Pacific time
+
+
+def hour_start(f):
+    """The Pacific time each hour begins (EIA labels hours by their end)."""
+    return f.local - pd.Timedelta(hours=1)
+
+
+def flows_by_year(f):
+    """Each year's net flow into BC (TWh), share of hours importing, and the flow in the busiest 1% of hours
+    each way (MW)."""
+    year = hour_start(f).dt.year
+    g = f.mw.groupby(year)
+    return pd.DataFrame({"hours": g.count(), "net_into_bc_twh": g.sum() / 1e6,
+                         "share_hours_importing": (f.mw > 0).groupby(year).mean(),
+                         "import_top_1pct_mw": g.quantile(0.99), "export_top_1pct_mw": -g.quantile(0.01)}
+                        ).rename_axis("year")
+
+
+def flows_by_hour(f):
+    """Average MW into BC by Pacific hour beginning, for the baseline years together and each later year."""
+    start = hour_start(f)
+    year = start.dt.year
+    keep = year >= FLOWS_BASELINE[0]
+    group = year.astype(str).where(year > FLOWS_BASELINE[1], f"{FLOWS_BASELINE[0]}-{FLOWS_BASELINE[1]}")
+    return (f.mw[keep].groupby([start.dt.hour[keep], group[keep]]).mean().unstack()
+            .rename_axis(index="hour", columns=None))
+
+
 def main():
     for folder in (FIGURES, OUTPUT):
         folder.mkdir(exist_ok=True)
@@ -292,8 +382,19 @@ def main():
     annual = (b.groupby(b.index.year).sum()[full] / 1000).assign(
         normalised=annual_twh(normal_mw)).rename_axis("year")
     annual["weather"] = annual.demand - annual.normalised
+    cap = capacity()
+    annual["hydro_capacity_mw"] = cap["Hydraulic turbine"]
+    annual["hydro_capacity_factor"] = capacity_factor(annual.hydro, annual.hydro_capacity_mw)
+    annual = annual.join(fuel_generation())
+    annual["thermal_capacity_factor"] = capacity_factor(annual.thermal_twh, cap["Total thermal"])
     parts = drought(b, normal_mw).rename_axis("year")
-    t = trade_by_year(trade()).rename_axis("year")
+    monthly_trade = trade()
+    t = trade_by_year(monthly_trade).rename_axis("year")
+    f = flows()
+    by_year, by_hour = flows_by_year(f), flows_by_hour(f)
+    eia_month = f.mw.groupby(hour_start(f).dt.to_period("M")).sum() / 1000
+    cer_month = monthly_trade.import_gwh - monthly_trade.export_gwh
+    check = pd.concat({"eia": eia_month, "cer": cer_month}, axis=1).dropna()
     effect, kalman = temperature_effect(d)
     constant = kalman.model.fit_constrained({"heating": 0.0}, disp=False, maxiter=2000)
     lr = max(2 * (kalman.llf - constant.llf), 0)
@@ -302,6 +403,8 @@ def main():
     annual.round(2).to_csv(OUTPUT / "annual.csv")
     parts.round(2).to_csv(OUTPUT / "drought.csv")
     t.round(2).to_csv(OUTPUT / "trade.csv")
+    by_year.round(3).to_csv(OUTPUT / "flows_by_year.csv")
+    by_hour.round(1).to_csv(OUTPUT / "flows_by_hour.csv")
     effect.set_axis([f"{a}_{b}" for a, b in effect.columns], axis=1).rename_axis("year").round(1).to_csv(
         OUTPUT / "temperature_effect.csv")
     periods = fit.params.filter(regex="^(hdd|cdd)_")
@@ -313,6 +416,12 @@ def main():
                         "import_price", "net_value"]].round(1).to_string())
     print(effect.loc[[1980, 1990, 2000, 2010, 2020, effect.index.max()]].round(0).to_string())
     print(f"Heating effect constant over time? LR {lr:.1f}, p = {p_heating:.2g}")
+    print(annual[["hydro_capacity_mw", "hydro_capacity_factor", "thermal_capacity_factor", "fossil_twh"]]
+          .loc[2016:].round(2).to_string())
+    print(by_year.round(2).to_string())
+    print(by_hour.round(0).to_string())
+    print(f"EIA hourly flows against CER monthly net trade, {check.index.min()} to {check.index.max()}: "
+          f"correlation {check.corr().iloc[0, 1]:.3f}, mean absolute difference {(check.eia - check.cer).abs().mean():.0f} GWh")
 
     # Figures ----
     INK, MUTED, GREY = "#0b0b0b", "#52514e", "#a8a7a2"
@@ -435,6 +544,60 @@ def main():
          "estimated with a Kalman filter",
          f"Test of change over time (heating): p {p_text}. Airports: Vancouver, Victoria, Kamloops, Prince George.\n"
          + SOURCE)
+
+    # How hard the hydro fleet ran, and installed capacity
+    cf = annual.hydro_capacity_factor.dropna() * 100
+    low = cf.idxmin()
+    base = cf.loc[BASELINE[0]:BASELINE[1]].mean()
+    fig, (left, right) = plt.subplots(1, 2, figsize=(12, 5.2), gridspec_kw={"width_ratios": [1.3, 1]})
+    fig.subplots_adjust(top=0.78, bottom=0.2, wspace=0.22)
+    left.bar(cf.index, cf, color=[RED if y == low else BLUE for y in cf.index], width=0.7)
+    left.axhline(base, color=MUTED, ls="--", lw=1.2, label=f"{BASELINE[0]}-{BASELINE[1]} average, {base:.0f}%")
+    left.set_xticks(range(cf.index.min(), cf.index.max() + 1, 4))
+    left.set_ylabel("Hydro output, % of capacity")
+    left.set_ylim(0, cf.max() * 1.15)
+    left.legend(loc="upper right", fontsize=10)
+    left.set_title("How hard the hydro fleet ran", loc="left", color=INK, fontsize=12)
+    mix = cap.loc[cap["Total installed capacity"].notna(),
+                  ["Hydraulic turbine", "Total thermal", "Wind power turbine", "Solar power"]].fillna(0) / 1000
+    right.stackplot(mix.index, mix.T, colors=[BLUE, GREY, GREEN, ORANGE], labels=["Hydro", "Thermal", "Wind", "Solar"])
+    right.set_ylim(0, mix.sum(axis=1).max() * 1.2)
+    right.set_ylabel("GW at year end")
+    right.legend(loc="upper left", fontsize=10, ncol=4)
+    right.set_title("Installed capacity", loc="left", color=INK, fontsize=12)
+    save(fig, "hydro_capacity.png",
+         f"In {low} BC's hydro fleet produced {cf[low]:.0f}% of what it could, the least of any year since "
+         f"{cf.index.min()}",
+         "Hydro generation as a share of what the installed hydro capacity would produce running all year",
+         "Site C does not yet appear in the 2024-2025 capacity. 2012 not published.\n"
+         "Source: Statistics Canada tables 25-10-0001-01, 25-10-0015-01 and 25-10-0022-01.")
+
+    # Hourly flows with the United States
+    COLOURS = [RED, ORANGE, "#7a5bb5", GREEN, BLUE]
+    fig, (left, right) = plt.subplots(1, 2, figsize=(12, 5.8), gridspec_kw={"width_ratios": [1.5, 1]})
+    fig.subplots_adjust(top=0.79, bottom=0.27, wspace=0.22)
+    left.axvspan(EVENING[0] - 0.5, EVENING[-1] + 0.5, color=GREY, alpha=0.15, lw=0)
+    for i, column in enumerate(by_hour):
+        baseline = i == 0
+        label = column if by_year.hours.get(int(column[-4:]), 0) >= 8760 or baseline else f"{column} so far"
+        left.plot(by_hour.index, by_hour[column], color=GREY if baseline else COLOURS[(i - 1) % len(COLOURS)],
+                  lw=2.8 if baseline else 2.2, label=label)
+    left.axhline(0, color=MUTED, lw=0.8)
+    left.set_xticks([0, 6, 12, 18, 23], ["midnight", "6 am", "noon", "6 pm", "11 pm"])
+    left.set_ylabel("MW into BC (negative: out of BC)")
+    left.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=9, ncol=5)
+    left.set_title("Average flow by hour of the day (5-9 pm shaded)", loc="left", color=INK, fontsize=12)
+    share = by_year.share_hours_importing.loc[FLOWS_BASELINE[0]:] * 100
+    right.bar(share.index, share, color=[RED if s > 50 else BLUE for s in share], width=0.7)
+    right.axhline(50, color=MUTED, lw=0.8)
+    right.set_ylabel("% of hours")
+    right.set_title("Hours BC was importing", loc="left", color=INK, fontsize=12)
+    save(fig, "hourly_flows.png",
+         "Even in the drought, BC imported least at the morning and evening peaks",
+         "Hourly flow between the Bonneville Power Administration and BC Hydro, by Pacific hour",
+         f"{f.local.max().year}: to {hour_start(f).max():%d %B}. Monthly totals match the Canada Energy Regulator's net trade "
+         f"(correlation {check.corr().iloc[0, 1]:.3f}).\nSource: US Energy Information Administration, Form EIA-930, "
+         f"{dt.date.today():%B %Y}.")
 
 
 if __name__ == "__main__":

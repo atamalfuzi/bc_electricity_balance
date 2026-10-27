@@ -146,6 +146,66 @@ def test_trade_by_year_prices_are_dollars_per_mwh():
     assert np.isclose(y.net_value[2024], 12 * 8.0)
 
 
+def test_capacity_factor_counts_the_hours_in_each_year():
+    cf = balance.capacity_factor(pd.Series([8.784, 8.76], index=[2024, 2025]), pd.Series([2000.0, 1000.0], index=[2024, 2025]))
+    assert np.allclose(cf, [0.5, 1.0])  # 2024 is a leap year
+
+
+EIA_HEADER = ('"Balancing Authority","Data Date","Hour Number","Directly Interconnected Balancing Authority",'
+              '"Interchange (MW)","Local Time at End of Hour","UTC Time at End of Hour","Region","DIBA_Region"\n')
+
+
+def eia_file(path, rows):
+    """An EIA-930 interchange file with rows of (reporting BA, neighbour, MW, local hour ending, UTC hour ending)."""
+    lines = [f'{ba},07/01/2026,1,{nb},"{mw}",{local},{utc},NW,CAN\n' for ba, nb, mw, local, utc in rows]
+    path.write_text(EIA_HEADER + "".join(lines))
+    return path
+
+
+def test_eia_rows_keep_bc_flows_sum_neighbours_and_read_thousands(tmp_path):
+    path = eia_file(tmp_path / "eia.csv", [
+        ("BPAT", "BCHA", "1,234", "07/01/2023 1:00:00 AM", "07/01/2023 8:00:00 AM"),
+        ("PSEI", "BCHA", "100", "07/01/2023 1:00:00 AM", "07/01/2023 8:00:00 AM"),
+        ("BPAT", "BCHA", "-500", "07/01/2023 2:00:00 AM", "07/01/2023 9:00:00 AM"),
+        ("BPAT", "AVA", "999", "07/01/2023 1:00:00 AM", "07/01/2023 8:00:00 AM"),
+    ])
+    f = balance.eia_rows(path)
+    assert f.mw.tolist() == [1334.0, -500.0]  # positive: out of the US side, into BC
+    assert list(f.index) == [pd.Timestamp("2023-07-01 08:00"), pd.Timestamp("2023-07-01 09:00")]
+    assert f.local.iloc[0] == pd.Timestamp("2023-07-01 01:00")
+
+
+def test_flows_download_only_half_years_after_the_stored_history(monkeypatch, tmp_path):
+    stored = pd.DataFrame({"utc": pd.to_datetime(["2017-05-10 07:00", "2026-07-01 06:00", "2026-07-01 07:00"]),
+                           "local": pd.to_datetime(["2017-05-10 00:00", "2026-06-30 23:00", "2026-07-01 00:00"]),
+                           "mw": [0.0, -100.0, -200.0]})
+    stored.to_csv(tmp_path / "stored.csv.gz", index=False, compression="gzip")
+    newer = eia_file(tmp_path / "newer.csv", [
+        ("BPAT", "BCHA", "-250", "07/01/2026 12:00:00 AM", "07/01/2026 7:00:00 AM"),  # replaces the stored hour
+        ("BPAT", "BCHA", "300", "07/01/2026 1:00:00 AM", "07/01/2026 8:00:00 AM"),
+    ])
+    requested = []
+    monkeypatch.setattr(balance, "FLOWS", tmp_path / "stored.csv.gz")
+    monkeypatch.setattr(balance, "cached", lambda url, name: requested.append(name) or newer)
+
+    f = balance.flows(today="2026-10-27")
+    assert requested == ["eia_2026_Jul_Dec.csv"]
+    assert f.mw.tolist() == [-100.0, -250.0, 300.0]  # the placeholder hour before 10 May 2017 is dropped
+
+
+def test_flows_by_hour_and_year_use_the_hour_each_flow_begins():
+    local = pd.date_range("2022-06-01 01:00", periods=24, freq="h").append(
+        pd.date_range("2023-06-01 01:00", periods=24, freq="h"))
+    mw = np.r_[np.full(24, -100.0), np.where(np.arange(24) == 18, 200.0, 0.0)]  # 2023: 200 MW in, 6-7 pm only
+    f = pd.DataFrame({"local": local, "mw": mw}, index=local + pd.Timedelta(hours=7))
+    by_hour = balance.flows_by_hour(f)
+    assert list(by_hour.columns) == ["2018-2022", "2023"]
+    assert (by_hour["2018-2022"] == -100).all() and by_hour.loc[18, "2023"] == 200 and by_hour.loc[19, "2023"] == 0
+    by_year = balance.flows_by_year(f)
+    assert by_year.loc[2023, "share_hours_importing"] == 1 / 24
+    assert np.isclose(by_year.loc[2022, "net_into_bc_twh"], -24 * 100 / 1e6)
+
+
 def test_time_varying_model_recovers_a_drifting_heating_effect():
     rng = np.random.default_rng(1)
     months = pd.period_range("1980-01", "2019-12", freq="M")
