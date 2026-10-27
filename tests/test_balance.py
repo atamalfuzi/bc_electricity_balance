@@ -1,10 +1,37 @@
 """Checks for the data handling and models in balance.py. No downloads: every input is built here."""
 from types import SimpleNamespace
+import io
+import urllib.error
 
 import numpy as np
 import pandas as pd
+import pytest
 
 import balance
+
+
+def test_download_retries_after_failures_and_gives_up_after_three(monkeypatch, tmp_path):
+    calls, sleeps = [], []
+
+    def flaky(url, timeout):
+        calls.append(timeout)
+        if len(calls) < 3:
+            raise TimeoutError("timed out")
+        return io.BytesIO(b"data")
+
+    monkeypatch.setattr(balance, "DATA", tmp_path)
+    monkeypatch.setattr(balance.time, "sleep", sleeps.append)
+    monkeypatch.setattr(balance.urllib.request, "urlopen", flaky)
+    assert balance.cached("https://example.org/a", "a.csv").read_bytes() == b"data"
+    assert calls == [120, 120, 120] and sleeps == [30, 60]
+
+    def down(url, timeout):
+        raise urllib.error.URLError("refused")
+
+    monkeypatch.setattr(balance.urllib.request, "urlopen", down)
+    with pytest.raises(urllib.error.URLError):
+        balance.cached("https://example.org/b", "b.csv")
+    assert not (tmp_path / "b.csv").exists()
 
 
 def statcan_rows(column, values, geo="British Columbia", **fixed):
