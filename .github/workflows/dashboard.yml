@@ -1,0 +1,49 @@
+name: dashboard
+
+# Statistics Canada publishes the monthly electricity tables by about the 10th, and the Canada Energy Regulator its
+# trade data on the 1st; rebuild on the 15th.
+on:
+  schedule:
+    - cron: "0 15 15 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write  # to keep the schedule switched on, see the last build step
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: pytest
+      - run: python balance.py
+      - run: python dashboard.py  # stops here, keeping the live page, if the new data fail its checks
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      # GitHub switches off schedules in repositories with no activity for 60 days; re-enabling resets that clock.
+      - run: gh api -X PUT repos/${{ github.repository }}/actions/workflows/dashboard.yml/enable
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
