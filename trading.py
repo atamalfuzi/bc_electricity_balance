@@ -237,7 +237,8 @@ def site_data(f, label, fraser):
 
 def main():
     f, b = balance.flows(), balance.balance()
-    temperature = balance.temperature("1108395").combine_first(balance.temperature("1108447"))  # Vancouver
+    new, old = balance.STATIONS["Vancouver"]
+    temperature = balance.temperature(new).combine_first(balance.temperature(old))
     p = daily_profiles(f)
     silhouette = {k: silhouette_score(p.values, KMeans(k, n_init=10, random_state=0).fit_predict(p.values),
                                       sample_size=3000, random_state=0) for k in range(2, 8)}
