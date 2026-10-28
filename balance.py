@@ -9,6 +9,7 @@ mean temperatures from the Government of Canada's climate data service.
 Run from the repository folder: python balance.py
 """
 from pathlib import Path
+import calendar
 import datetime as dt
 import io
 import time
@@ -119,7 +120,7 @@ def fuel_generation():
 
 def capacity_factor(twh, mw):
     """Output as a share of what the capacity would produce running all year."""
-    hours = pd.Series([8784 if y % 4 == 0 else 8760 for y in twh.index], index=twh.index)
+    hours = pd.Series([24 * (365 + calendar.isleap(y)) for y in twh.index], index=twh.index)
     return twh * 1e6 / (mw * hours)
 
 
