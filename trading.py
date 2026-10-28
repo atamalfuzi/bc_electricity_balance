@@ -152,7 +152,7 @@ def frame(f, bp, b, temperature):
     water = (year / year.loc["2013-12":"2022-12"].mean()).shift(1) * 100
     month = d.start.dt.to_period("M")
     water = water.reindex(pd.period_range(water.index.min(), month.max(), freq="M")).ffill()
-    angle = 2 * np.pi * d.start.dt.dayofyear / 365.25
+    angle = 2 * np.pi * d.start.dt.day_of_year / 365.25
     d = d.assign(bc_water=water.reindex(month).to_numpy(),
                  temperature=temperature.reindex(d.start.dt.normalize()).to_numpy(),
                  hour=d.start.dt.hour.astype(float), weekday=d.start.dt.weekday.astype(float), month=d.start.dt.month,
@@ -315,11 +315,11 @@ def main():
     years = range(p.index.year.min(), p.index.year.max() + 1)
     grid = np.full((len(years), 366), np.nan)
     for day, g in label.items():
-        grid[day.year - years[0], day.dayofyear - 1] = g
+        grid[day.year - years[0], day.day_of_year - 1] = g
     right.imshow(grid, aspect="auto", cmap=mcolors.ListedColormap(COLOURS), vmin=-0.5, vmax=K - 0.5, interpolation="none",
                  extent=[0.5, 366.5, years[-1] + 0.5, years[0] - 0.5])
     firsts = pd.date_range("2025-01-01", periods=12, freq="MS")
-    right.set_xticks(firsts.dayofyear, [m.strftime("%b") for m in firsts])
+    right.set_xticks(firsts.day_of_year, [m.strftime("%b") for m in firsts])
     right.set_yticks(list(years))
     right.grid(False)
     right.set_title("Each day's pattern")
