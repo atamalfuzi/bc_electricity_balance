@@ -25,7 +25,7 @@ The results below are as of October 2026 (data through July 2026).
 
 ![The Fraser River's annual flow since 1913, and return periods](figures/river_history.png)
 
-**2023 was a once-in-about-100-years low, and 2023–2024 the driest two years in a row since 1913.** The Fraser at Hope carried 1,954 m³/s on average in 2023, 28% below its 1913–2024 median and the second-lowest of 112 years (after 1929). A lognormal fitted to all years puts a year that low at about once in 100 years (90% bootstrap range 55–259 years); 2024, the fourth-lowest, at once in 29 (18–55). Over the two years together the river ran lower than in any other two-year stretch on record. There is no long-run trend (Theil-Sen slope +59 m³/s a century, Kendall p = 0.58): the drought was rare weather, not a drying river.
+**2023 was a once-in-about-100-years low, and 2023–2024 the driest two years in a row since 1913.** The Fraser at Hope carried 1,954 m³/s on average in 2023, 28% below its 1913–2024 median and the second-lowest of 112 years (after 1929). A lognormal fitted to all years puts a year that low at about once in 100 years (90% bootstrap range 55–259 years); 2024, the fourth-lowest, at once in 29 (18–55). Over the two years together the river ran lower than in any other two-year stretch on record. There is no long-run trend (Theil-Sen slope +59 m³/s a century, Kendall p = 0.58), so the drought looks like rare weather rather than a drying river.
 
 ### 2. How much hydro output did low water cost?
 
