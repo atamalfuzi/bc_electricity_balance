@@ -3,7 +3,8 @@ trend, season and weather predicted, the last 12 months against the 12 before (w
 against normal, net imports, what trade with the United States earned or cost, and the last full month of hourly
 flows with the United States. Writes a static site to site/.
 
-Run from the repository folder, after balance.py: python balance.py && python dashboard.py
+Run from the repository folder, after the analyses (its longer view uses their charts):
+python balance.py && python rivers.py && python trading.py && python forecast.py && python dashboard.py
 """
 from pathlib import Path
 import datetime as dt
@@ -294,6 +295,9 @@ def page(s, data_through, updated):
   <figure><img src="recent_hourly.png" alt="BC's average power flow with the United States by hour of the day in the latest full month, against the same month a year earlier and in 2018-2022." width="1800" height="810" /></figure>
   <h2>The longer view</h2>
   <p>Re-estimated each month with all data to date.</p>
+  <figure><img src="demand_forecast.png" alt="BC's monthly demand over the last three years and the forecast for the next six months with 80% and 95% ranges, and the average error of three forecasting methods by months ahead." width="2400" height="1120" /></figure>
+  <figure><img src="import_regime.png" alt="Weekly power flow into BC against the usual for the month since 2017, and the probability from a regime model that each week was in a heavy-import spell." width="2400" height="1160" /></figure>
+  <figure><img src="flow_forecast.png" alt="The last two weeks of hourly power flow with the United States against a day-ahead forecast, and each forecasting method's average error by year." width="2400" height="1160" /></figure>
   <figure><img src="drought.png" alt="Annual generation and demand in BC since 1990 with net imports and exports shaded, and the 2023-2025 rise in net imports split into lower hydro output, demand growth, weather and other generation." width="2400" height="1200" /></figure>
   <figure><img src="trade.png" alt="Value of BC's electricity exports to and imports from the United States since 1990, and the average prices received and paid." width="2400" height="1040" /></figure>
   <figure><img src="hourly_flows.png" alt="Average hourly power flow between BC and the United States by hour of the day for 2018-2022 and each later year, and the share of hours BC was importing each year since 2018." width="2400" height="1160" /></figure>
@@ -340,7 +344,8 @@ def main():
 
     s = {**summary(b, t, expected, normal), **hourly(f)}
     figures(b, expected, d, f)
-    for name in ("drought.png", "trade.png", "hourly_flows.png", "hydro_capacity.png", "temperature_effect.png"):
+    for name in ("demand_forecast.png", "import_regime.png", "flow_forecast.png", "drought.png", "trade.png",
+                 "hourly_flows.png", "hydro_capacity.png", "temperature_effect.png"):
         shutil.copy(balance.FIGURES / name, SITE / name)
     updated = dt.date.today()
     (SITE / "index.html").write_text(page(s, s["month"], updated), encoding="utf-8")

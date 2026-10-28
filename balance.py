@@ -147,12 +147,17 @@ def eia_rows(path):
     return pd.DataFrame({"local": t.local.groupby(level=0).first(), "mw": t.mw.groupby(level=0).sum(min_count=1)})
 
 
+def half_years(since, today=None):
+    """EIA's six-month files, as (year, half), from the one holding `since` to the one holding today."""
+    months = pd.period_range(pd.Timestamp(since).to_period("M"), pd.Timestamp(today or dt.date.today()), freq="M")
+    return sorted({(m.year, "Jan_Jun" if m.month <= 6 else "Jul_Dec") for m in months})
+
+
 def flows(today=None):
     """BC's hourly flows with the United States: the stored past half-years plus every later one to today."""
     past = pd.read_csv(FLOWS, index_col="utc", parse_dates=["utc", "local"])
-    months = pd.period_range(past.index.max().to_period("M"), pd.Timestamp(today or dt.date.today()), freq="M")
-    halves = sorted({(m.year, "Jan_Jun" if m.month <= 6 else "Jul_Dec") for m in months})
-    new = [eia_rows(cached(EIA.format(year, half), f"eia_{year}_{half}.csv")) for year, half in halves]
+    new = [eia_rows(cached(EIA.format(year, half), f"eia_{year}_{half}.csv"))
+           for year, half in half_years(past.index.max(), today)]
     f = pd.concat([past, *new])
     f = f[~f.index.duplicated(keep="last")].sort_index()  # a newer file replaces stored hours it repeats
     return f[f.local > FLOWS_START]  # from the first hour of 10 May 2017
@@ -370,6 +375,24 @@ def flows_by_hour(f):
             .rename_axis(index="hour", columns=None))
 
 
+# Charts, in a style shared with rivers.py, trading.py and forecast.py ----
+INK, MUTED, GREY = "#0b0b0b", "#52514e", "#a8a7a2"
+BLUE, ORANGE, GREEN, RED = "#2a78d6", "#eb6834", "#3a9b6a", "#c8413b"
+STYLE = {
+    "font.size": 11, "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False,
+    "axes.edgecolor": MUTED, "xtick.color": MUTED, "ytick.color": MUTED, "axes.labelcolor": MUTED,
+    "axes.grid": True, "grid.color": "#e6e5e1", "axes.axisbelow": True, "legend.frameon": False,
+}
+
+
+def save(fig, name, title, subtitle, caption):
+    fig.text(0.01, 0.99, title, fontsize=15, fontweight="bold", color=INK, va="top")
+    fig.text(0.01, 0.93, subtitle, color=MUTED, va="top")
+    fig.text(0.01, 0.01, caption, color=MUTED, fontsize=9, va="bottom")
+    fig.savefig(FIGURES / name, dpi=200, facecolor="white")
+    plt.close(fig)
+
+
 def main():
     for folder in (FIGURES, OUTPUT):
         folder.mkdir(exist_ok=True)
@@ -424,22 +447,9 @@ def main():
           f"correlation {check.corr().iloc[0, 1]:.3f}, mean absolute difference {(check.eia - check.cer).abs().mean():.0f} GWh")
 
     # Figures ----
-    INK, MUTED, GREY = "#0b0b0b", "#52514e", "#a8a7a2"
-    BLUE, ORANGE, GREEN, RED = "#2a78d6", "#eb6834", "#3a9b6a", "#c8413b"
-    plt.rcParams.update({
-        "font.size": 11, "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False,
-        "axes.edgecolor": MUTED, "xtick.color": MUTED, "ytick.color": MUTED, "axes.labelcolor": MUTED,
-        "axes.grid": True, "grid.color": "#e6e5e1", "axes.axisbelow": True, "legend.frameon": False,
-    })
+    plt.rcParams.update(STYLE)
     SOURCE = ("Source: Statistics Canada tables 25-10-0001-01, 25-10-0015-01 and 25-10-0016-01; "
               "Government of Canada daily climate data.")
-
-    def save(fig, name, title, subtitle, caption):
-        fig.text(0.01, 0.99, title, fontsize=15, fontweight="bold", color=INK, va="top")
-        fig.text(0.01, 0.93, subtitle, color=MUTED, va="top")
-        fig.text(0.01, 0.01, caption, color=MUTED, fontsize=9, va="bottom")
-        fig.savefig(FIGURES / name, dpi=200, facecolor="white")
-        plt.close(fig)
 
     # Annual demand, actual and weather-normalised
     first, last = annual.index.min(), annual.index.max()

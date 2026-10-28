@@ -29,6 +29,9 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: pytest
       - run: python balance.py
+      - run: python rivers.py
+      - run: python trading.py
+      - run: python forecast.py  # about five minutes: the forecast backtest
       - run: python dashboard.py  # stops here, keeping the live page, if the new data fail its checks
       - uses: actions/upload-pages-artifact@v5
         with:
