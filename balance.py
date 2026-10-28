@@ -398,6 +398,8 @@ STYLE = {
     "axes.grid": True, "grid.color": "#e6e5e1", "axes.axisbelow": True, "legend.frameon": False,
     "axes.titlelocation": "left", "axes.titlecolor": INK, "axes.titlesize": 12,
 }
+SOURCE = ("Source: Statistics Canada tables 25-10-0001-01, 25-10-0015-01 and 25-10-0016-01; "
+          "Government of Canada daily climate data.")
 
 
 def save(fig, name, title, subtitle, caption, folder=FIGURES, dpi=200):
@@ -460,8 +462,6 @@ def main():
 
     # Figures ----
     plt.rcParams.update(STYLE)
-    SOURCE = ("Source: Statistics Canada tables 25-10-0001-01, 25-10-0015-01 and 25-10-0016-01; "
-              "Government of Canada daily climate data.")
 
     # Annual demand, actual and weather-normalised
     first, last = annual.index.min(), annual.index.max()

@@ -14,14 +14,12 @@ from statsmodels.tsa.exponential_smoothing.ets import ETSModel
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 import balance
-from balance import BLUE, GREY, INK, MUTED, ORANGE, RED, gwh
+from balance import BLUE, GREY, INK, MUTED, ORANGE, RED, SOURCE, gwh
 
 FIT_FROM = "2000-01"
 FIRST_ORIGIN = "2014-12"
 H = 6
 BEST = "Seasonal ARIMA with weather"
-SOURCE = ("Source: Statistics Canada tables 25-10-0001-01, 25-10-0015-01 and 25-10-0016-01; Government of Canada "
-          "daily climate data.")
 
 
 def models(y, X, future_X, steps=H):
