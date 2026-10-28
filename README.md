@@ -113,7 +113,25 @@ The shock variances and the error's persistence are estimated by maximum likelih
 
 **9. Demand forecasts and conformal ranges** ([`forecast.py`](forecast.py)). From every month since December 2014, three methods forecast the next six months of average load from the data since 2000 up to that month: the same month last year; exponential smoothing with a damped trend and additive seasons; and a seasonal ARIMA (1,0,1)(0,1,1)₁₂ with heating and cooling degree days, given the 1991–2020 normal degree days for the months ahead. Conformal ranges take, for each horizon, the 80th and 95th percentiles of the ARIMA's absolute % errors; their coverage is checked as it would have run, using at each origin only the errors already known (after the first 24).
 
-All estimates are in [`output/`](output): annual demand, generation, capacity and trade in [`annual.csv`](output/annual.csv), the import swing in [`drought.csv`](output/drought.csv), trade in [`trade.csv`](output/trade.csv), hourly flows by year and hour in [`flows_by_year.csv`](output/flows_by_year.csv) and [`flows_by_hour.csv`](output/flows_by_hour.csv), the yearly temperature effects in [`temperature_effect.csv`](output/temperature_effect.csv), river flows and the inflow index in [`rivers.csv`](output/rivers.csv), the inflow model in [`water_to_power.csv`](output/water_to_power.csv) and [`low_water.csv`](output/low_water.csv), the kinds of day in [`patterns_by_year.csv`](output/patterns_by_year.csv) and [`pattern_profiles.csv`](output/pattern_profiles.csv), the regime model in [`import_regime.csv`](output/import_regime.csv) and [`import_spells.csv`](output/import_spells.csv), the hourly models in [`flow_forecast_errors.csv`](output/flow_forecast_errors.csv) and [`flow_drivers.csv`](output/flow_drivers.csv), and the demand forecasts in [`demand_forecast.csv`](output/demand_forecast.csv), [`demand_forecast_errors.csv`](output/demand_forecast_errors.csv) and [`weather_effect.csv`](output/weather_effect.csv). [`balance-data.js`](output/balance-data.js) holds the data behind the write-up's interactive charts. The tests in [`tests/`](tests) run on every push and need no downloads; they check the data handling and each method on data built to a known answer, from the state-space model recovering a drifting effect to the regime model finding a known spell and the conformal ranges holding as stated.
+All estimates are in [`output/`](output):
+
+| File | What it holds |
+|---|---|
+| [`annual.csv`](output/annual.csv) | Annual demand, generation, capacity and trade |
+| [`drought.csv`](output/drought.csv) | The import swing |
+| [`trade.csv`](output/trade.csv) | Trade with the United States |
+| [`flows_by_year.csv`](output/flows_by_year.csv), [`flows_by_hour.csv`](output/flows_by_hour.csv) | Hourly flows by year and by hour of the day |
+| [`temperature_effect.csv`](output/temperature_effect.csv) | The yearly temperature effects |
+| [`rivers.csv`](output/rivers.csv) | River flows and the inflow index |
+| [`water_to_power.csv`](output/water_to_power.csv), [`low_water.csv`](output/low_water.csv) | The inflow model |
+| [`patterns_by_year.csv`](output/patterns_by_year.csv), [`pattern_profiles.csv`](output/pattern_profiles.csv) | The kinds of trading day |
+| [`import_regime.csv`](output/import_regime.csv), [`import_spells.csv`](output/import_spells.csv) | The regime model |
+| [`flow_forecast_errors.csv`](output/flow_forecast_errors.csv), [`flow_drivers.csv`](output/flow_drivers.csv) | The hourly models |
+| [`demand_forecast.csv`](output/demand_forecast.csv), [`demand_forecast_errors.csv`](output/demand_forecast_errors.csv) | The demand forecasts |
+| [`weather_effect.csv`](output/weather_effect.csv) | Each year's weather effect, with 90% ranges |
+| [`balance-data.js`](output/balance-data.js) | The data behind the write-up's interactive charts |
+
+The tests in [`tests/`](tests) run on every push and need no downloads. They check the data handling, and they check each method on simulated data with a known answer. For example, the state-space model has to recover a drifting effect, the regime model has to find a known spell, and the conformal ranges have to hold as often as stated.
 
 ## Limits
 
