@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/atamalfuzi/bc_electricity_balance/actions/workflows/tests.yml/badge.svg)](https://github.com/atamalfuzi/bc_electricity_balance/actions/workflows/tests.yml)
 
-Six questions about British Columbia's electricity since 1980, each answered with open data and a method suited to it, from extreme-value statistics and regime models to machine learning and calibrated forecasts. Python, with pandas, statsmodels and scikit-learn.
+Six questions about British Columbia's electricity since 1980, answered with open data. Python, with pandas, statsmodels and scikit-learn.
 
 **[Live dashboard](https://atamalfuzi.github.io/bc_electricity_balance/)**, rebuilt on the 15th of each month from the latest Statistics Canada, Canada Energy Regulator and US Energy Information Administration data: the latest month's demand against what the weather and season predict, hydro output and net imports over the last 12 months, what the trade cost, the last full month of hourly trade with the United States, a six-month demand forecast with calibrated ranges, the import regime and a day-ahead forecast of the hourly flow. **[Write-up with interactive charts](https://atamalfuzi.github.io/bc-electricity-balance.html).** The results below are as of October 2026 (data through July 2026).
 
