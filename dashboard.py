@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 import balance
+from balance import BLUE, GREEN, GREY, INK, MUTED, ORANGE, RED
 
 SITE = Path("site")
 URL = "https://atamalfuzi.github.io/bc_electricity_balance/"
@@ -127,17 +128,7 @@ def published_through():
 
 
 # Figures ----
-INK, MUTED, GREY = "#0b0b0b", "#52514e", "#a8a7a2"
-BLUE, GREEN, RED, ORANGE = "#2a78d6", "#3a9b6a", "#c8413b", "#eb6834"
 SOURCE = "Source: Statistics Canada tables 25-10-0015-01 and 25-10-0016-01"
-
-
-def save(fig, name, title, subtitle, caption):
-    fig.text(0.01, 0.99, title, fontsize=15, fontweight="bold", color=INK, va="top")
-    fig.text(0.01, 0.93, subtitle, color=MUTED, va="top")
-    fig.text(0.01, 0.01, caption, color=MUTED, fontsize=9, va="bottom")
-    fig.savefig(SITE / name, dpi=150, facecolor="white")
-    plt.close(fig)
 
 
 def years_axis(ax):
@@ -146,11 +137,7 @@ def years_axis(ax):
 
 
 def figures(b, expected_mw, d, f):
-    plt.rcParams.update({
-        "font.size": 11, "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False,
-        "axes.edgecolor": MUTED, "xtick.color": MUTED, "ytick.color": MUTED, "axes.labelcolor": MUTED,
-        "axes.grid": True, "grid.color": "#e6e5e1", "axes.axisbelow": True, "legend.frameon": False,
-    })
+    plt.rcParams.update(balance.STYLE)
     recent = slice(b.index.max() - 35, b.index.max())
     months = b.loc[recent].index.to_timestamp()
 
@@ -161,10 +148,10 @@ def figures(b, expected_mw, d, f):
     ax.set_ylabel("GWh a month")
     ax.legend(loc="upper right")
     years_axis(ax)
-    save(fig, "recent_demand.png", "BC's electricity demand, actual and expected, last three years",
-         "Expected: what the trend, the season and the month's weather predicted from the months before",
-         "State-space model of monthly average load with heating and cooling degree days at four airports.\n"
-         + SOURCE + "; Government of Canada daily climate data.")
+    balance.save(fig, "recent_demand.png", "BC's electricity demand, actual and expected, last three years",
+                 "Expected: what the trend, the season and the month's weather predicted from the months before",
+                 "State-space model of monthly average load with heating and cooling degree days at four airports.\n"
+                 + SOURCE + "; Government of Canada daily climate data.", folder=SITE, dpi=150)
 
     base = b.loc[f"{balance.BASELINE[0]}-01":f"{balance.BASELINE[1]}-12"].hydro
     by_month = base.groupby(base.index.month)
@@ -185,8 +172,9 @@ def figures(b, expected_mw, d, f):
     right.set_title("Net imports (red) and net exports (green)", loc="left", color=INK, fontsize=12)
     for ax in (left, right):
         years_axis(ax)
-    save(fig, "recent_supply.png", "Hydro output and net imports, last three years",
-         "Net imports are receipts from other provinces and the US minus deliveries to them", SOURCE + ".")
+    balance.save(fig, "recent_supply.png", "Hydro output and net imports, last three years",
+                 "Net imports are receipts from other provinces and the US minus deliveries to them", SOURCE + ".",
+                 folder=SITE, dpi=150)
 
     month = last_full_month(f)
     start = balance.hour_start(f)
@@ -205,10 +193,11 @@ def figures(b, expected_mw, d, f):
     ax.set_xticks([0, 6, 12, 18, 23], ["midnight", "6 am", "noon", "6 pm", "11 pm"])
     ax.set_ylabel("MW into BC (negative: out of BC)")
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=10, ncol=3)
-    save(fig, "recent_hourly.png", f"Power flow with the US by hour of the day, {month.strftime('%B %Y')}",
-         "Average flow into BC by Pacific hour, against the same month in earlier years (5-9 pm shaded)",
-         "Flow between the Bonneville Power Administration and BC Hydro.\n"
-         f"Source: US Energy Information Administration, Form EIA-930, {dt.date.today():%B %Y}.")
+    balance.save(fig, "recent_hourly.png", f"Power flow with the US by hour of the day, {month.strftime('%B %Y')}",
+                 "Average flow into BC by Pacific hour, against the same month in earlier years (5-9 pm shaded)",
+                 "Flow between the Bonneville Power Administration and BC Hydro.\n"
+                 f"Source: US Energy Information Administration, Form EIA-930, {dt.date.today():%B %Y}.",
+                 folder=SITE, dpi=150)
 
 
 # Page ----

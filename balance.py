@@ -375,7 +375,7 @@ def flows_by_hour(f):
             .rename_axis(index="hour", columns=None))
 
 
-# Charts, in a style shared with rivers.py, trading.py and forecast.py ----
+# Charts, in a style shared with rivers.py, trading.py, forecast.py and dashboard.py ----
 INK, MUTED, GREY = "#0b0b0b", "#52514e", "#a8a7a2"
 BLUE, ORANGE, GREEN, RED = "#2a78d6", "#eb6834", "#3a9b6a", "#c8413b"
 STYLE = {
@@ -385,11 +385,11 @@ STYLE = {
 }
 
 
-def save(fig, name, title, subtitle, caption):
+def save(fig, name, title, subtitle, caption, folder=FIGURES, dpi=200):
     fig.text(0.01, 0.99, title, fontsize=15, fontweight="bold", color=INK, va="top")
     fig.text(0.01, 0.93, subtitle, color=MUTED, va="top")
     fig.text(0.01, 0.01, caption, color=MUTED, fontsize=9, va="bottom")
-    fig.savefig(FIGURES / name, dpi=200, facecolor="white")
+    fig.savefig(folder / name, dpi=dpi, facecolor="white")
     plt.close(fig)
 
 
