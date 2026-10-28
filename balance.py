@@ -1,10 +1,10 @@
-"""British Columbia's electricity balance from open data: how much of the growth in demand since 1980 is
-weather, how its response to temperature has changed, and where the power came from, and at what cost, when
-the 2023-2024 drought cut hydro output.
+"""British Columbia's electricity balance since 1980: demand and the weather, the import swing when the 2023-2024
+drought cut hydro output, trade with the United States, hydro capacity factors and the hourly flows with the US.
 
 Data: Statistics Canada monthly electric power statistics (tables 25-10-0001-01 to 2007, 25-10-0015-01 and
-25-10-0016-01 from 2008), the Canada Energy Regulator's monthly electricity imports and exports, and daily
-mean temperatures from the Government of Canada's climate data service.
+25-10-0016-01 from 2008) and installed capacity (25-10-0022-01), the Canada Energy Regulator's monthly electricity
+imports and exports, the US Energy Information Administration's hourly Form EIA-930 interchange, and daily mean
+temperatures from the Government of Canada's climate data service.
 
 Run from the repository folder: python balance.py
 """

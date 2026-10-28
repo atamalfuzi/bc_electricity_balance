@@ -1,8 +1,8 @@
-"""Forecasts with uncertainty. Monthly demand one to six months ahead from three methods, the same month last year,
-exponential smoothing and a seasonal ARIMA with heating and cooling degree days (normal weather assumed ahead), each
-tested from every month since 2015 using only the data before it. Prediction ranges come from the model's own past
-errors (conformal prediction), and their coverage is checked as it would have run. Also 90% ranges for the weather
-adjustment of each year's demand.
+"""Monthly demand one to six months ahead from three methods: the same month last year, exponential smoothing, and a
+seasonal ARIMA with heating and cooling degree days (normal weather assumed ahead). Each is tested from every month
+since December 2014 using only the data before it. Prediction ranges come from the model's own past errors (conformal
+prediction), and their coverage is checked as it would have run. Also 90% ranges for the weather adjustment of each
+year's demand.
 
 Run from the repository folder, after balance.py: python forecast.py (about five minutes)
 """
