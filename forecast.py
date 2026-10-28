@@ -138,8 +138,7 @@ def main():
     left.xaxis.set_major_formatter(mdates.DateFormatter("%b\n%Y"))
     left.set_ylabel("GWh a month")
     left.legend(loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=4, fontsize=9)
-    left.set_title(f"BC's demand, with the next six months ({ahead[0]:%b %Y} to {ahead[-1]:%b %Y})", loc="left",
-                   color=INK, fontsize=12)
+    left.set_title(f"BC's demand, with the next six months ({ahead[0]:%b %Y} to {ahead[-1]:%b %Y})")
     for name, colour in zip(names, colours):
         right.plot(mape.index, mape[name], color=colour, lw=2.2, marker="o", label=name)
     right.set_xticks(range(1, H + 1))
@@ -147,7 +146,7 @@ def main():
     right.set_ylabel("Average error, %")
     right.set_ylim(0, None)
     right.legend(loc="lower right", fontsize=9)
-    right.set_title("How far off such forecasts have been", loc="left", color=INK, fontsize=12)
+    right.set_title("How far off such forecasts have been")
     balance.save(fig, "demand_forecast.png",
                  f"Six months out, BC's demand can be forecast to within about {mape[BEST].iloc[-1]:.1f}% on average",
                  f"Seasonal ARIMA with heating and cooling degree days (normal weather assumed ahead); tested from every "

@@ -310,7 +310,7 @@ def main():
     left.set_xticks([0, 6, 12, 18, 23], ["midnight", "6 am", "noon", "6 pm", "11 pm"])
     left.set_ylabel("MW into BC")
     left.legend(loc="upper left", bbox_to_anchor=(0, -0.08), fontsize=9)
-    left.set_title("The three typical days (bands: middle 80%)", loc="left", color=INK, fontsize=12)
+    left.set_title("The three typical days (bands: middle 80%)")
     years = range(p.index.year.min(), p.index.year.max() + 1)
     grid = np.full((len(years), 366), np.nan)
     for day, g in label.items():
@@ -321,7 +321,7 @@ def main():
     right.set_xticks(firsts.dayofyear, [m.strftime("%b") for m in firsts])
     right.set_yticks(list(years))
     right.grid(False)
-    right.set_title("Each day's pattern", loc="left", color=INK, fontsize=12)
+    right.set_title("Each day's pattern")
     peak = share[NAMES[2]].idxmax()
     balance.save(fig, "trading_patterns.png",
                  f"Three kinds of trading day, and the drought made {share.loc[peak, NAMES[2]]:.0%} of {peak}'s days "
@@ -338,7 +338,7 @@ def main():
     top.axhline(0, color=MUTED, lw=0.8)
     top.set_ylabel("MW vs usual")
     top.set_title(f"Weekly flow into BC, against the {balance.FLOWS_BASELINE[0]}-{balance.FLOWS_BASELINE[1]} average "
-                  "for the month", loc="left", color=INK, fontsize=12)
+                  "for the month")
     bottom.fill_between(prob.index, prob, color=RED, alpha=0.35, lw=0, step="mid")
     bottom.plot(prob.index, prob, color=RED, lw=1.2, drawstyle="steps-mid")
     bottom.set_ylim(0, 1.05)
@@ -373,14 +373,14 @@ def main():
     left.set_ylabel("MW into BC")
     left.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=3, fontsize=9)
     left.set_title(f"The last two weeks, forecast each midnight ({window.start.min():%d %b} to "
-                   f"{window.start.max():%d %b %Y})", loc="left", color=INK, fontsize=12)
+                   f"{window.start.max():%d %b %Y})")
     x, w = np.arange(len(errors)), 0.2
     for i, (name, colour) in enumerate(zip(names, colours)):
         right.bar(x + (i - 1.5) * w, errors[name], w, color=colour, label=f"{name}: {overall[name]:.0f} MW")
     right.set_xticks(x, [str(y) + ("\nso far" if y == errors.index.max() else "") for y in errors.index], fontsize=9)
     right.set_ylabel("Average error, MW")
     right.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=9)
-    right.set_title("Error each year, trained on earlier years", loc="left", color=INK, fontsize=12)
+    right.set_title("Error each year, trained on earlier years")
     worse = [y for y in errors.index if errors.loc[y, "Linear (ridge)"] > errors.loc[y, "Same hour yesterday"]]
     balance.save(fig, "flow_forecast.png",
                  f"A day-ahead forecast of the hourly flow beats repeating yesterday by {gain:.0%}"
@@ -398,7 +398,7 @@ def main():
     ax = fig.add_subplot(gs[:, 0])
     ax.barh([DRIVERS[k] for k in imp.index], imp, color=BLUE)
     ax.set_xlabel("Extra error when shuffled, MW")
-    ax.set_title("What the model relies on", loc="left", color=INK, fontsize=12)
+    ax.set_title("What the model relies on")
     ax.tick_params(axis="y", labelsize=9)
     units = {"bc_water": "% of 2013-2022 average", "bpat_demand": "MW", "hour": "Pacific hour beginning",
              "temperature": "°C"}
@@ -406,7 +406,7 @@ def main():
         a = fig.add_subplot(gs[i // 2, 1 + i % 2])
         a.plot(pdp[k]["grid_values"][0], pdp[k]["average"][0], color=RED, lw=2.2)
         a.axhline(0, color=MUTED, lw=0.8)
-        a.set_title(DRIVERS[k], loc="left", color=INK, fontsize=11)
+        a.set_title(DRIVERS[k], fontsize=11)
         a.set_xlabel(units[k], fontsize=9)
         a.tick_params(labelsize=9)
         if i % 2 == 0:

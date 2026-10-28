@@ -382,6 +382,7 @@ STYLE = {
     "font.size": 11, "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False,
     "axes.edgecolor": MUTED, "xtick.color": MUTED, "ytick.color": MUTED, "axes.labelcolor": MUTED,
     "axes.grid": True, "grid.color": "#e6e5e1", "axes.axisbelow": True, "legend.frameon": False,
+    "axes.titlelocation": "left", "axes.titlecolor": INK, "axes.titlesize": 12,
 }
 
 
@@ -485,7 +486,7 @@ def main():
     left.set_ylabel("TWh a year")
     left.set_ylim(40, None)
     left.legend(loc="lower left", ncol=3, fontsize=10)
-    left.set_title("Generation, demand and trade", loc="left", color=INK, fontsize=12)
+    left.set_title("Generation, demand and trade")
     years = [yr for yr in (2023, 2024, 2025) if yr in parts.index]
     stack = [("demand_growth", "Demand growth", ORANGE), ("weather", "Weather", GREY),
              ("less_hydro", "Lower hydro output", BLUE), ("less_other_generation", "Other generation", GREEN)]
@@ -500,7 +501,7 @@ def main():
     right.set_xticks(range(len(years)), years)
     right.set_ylabel(f"TWh, change from {BASELINE[0]}-{BASELINE[1]} average")
     right.legend(loc="upper center", bbox_to_anchor=(0.45, -0.1), ncol=3, fontsize=9)
-    right.set_title("Why net imports rose", loc="left", color=INK, fontsize=12)
+    right.set_title("Why net imports rose")
     save(fig, "drought.png",
          f"Low water cut BC's hydro output {hydro_drop:.0%} in 2023, and it imported {share:.0%} of the power it used",
          f"Net imports are demand minus generation in BC. Right: each year's change from the {BASELINE[0]}-{BASELINE[1]} "
@@ -516,12 +517,12 @@ def main():
     left.plot(y.index, y.import_value, color=RED, lw=2.2, label="Imports")
     left.set_ylabel("$ million a year")
     left.legend(loc="upper left")
-    left.set_title("Value of trade with the US", loc="left", color=INK, fontsize=12)
+    left.set_title("Value of trade with the US")
     right.plot(y.index, y.export_price, color=GREEN, lw=2.2, label="Price received for exports")
     right.plot(y.index, y.import_price, color=RED, lw=2.2, label="Price paid for imports")
     right.set_ylabel("$ per MWh")
     right.legend(loc="upper left")
-    right.set_title("Average prices", loc="left", color=INK, fontsize=12)
+    right.set_title("Average prices")
     save(fig, "trade.png",
          f"In 2023 BC paid ${t.import_value[2023] / 1000:.1f} billion for US power, but still sold its own exports "
          "for more per MWh",
@@ -542,7 +543,7 @@ def main():
             ax.plot([a, z], [periods[f"{kind}_{a}"]] * 2, color=MUTED, lw=1.4, ls="--",
                     label="Fixed for each period" if a == PERIODS[0][0] else None)
         ax.axhline(0, color=MUTED, lw=0.8)
-        ax.set_title(name, loc="left", color=INK, fontsize=12)
+        ax.set_title(name)
     axes[0].set_ylabel("MW of average load per degree")
     axes[0].legend(loc="upper left", fontsize=10)
     h = effect["heating", "effect"]
@@ -567,14 +568,14 @@ def main():
     left.set_ylabel("Hydro output, % of capacity")
     left.set_ylim(0, cf.max() * 1.15)
     left.legend(loc="upper right", fontsize=10)
-    left.set_title("How hard the hydro fleet ran", loc="left", color=INK, fontsize=12)
+    left.set_title("How hard the hydro fleet ran")
     mix = cap.loc[cap["Total installed capacity"].notna(),
                   ["Hydraulic turbine", "Total thermal", "Wind power turbine", "Solar power"]].fillna(0) / 1000
     right.stackplot(mix.index, mix.T, colors=[BLUE, GREY, GREEN, ORANGE], labels=["Hydro", "Thermal", "Wind", "Solar"])
     right.set_ylim(0, mix.sum(axis=1).max() * 1.2)
     right.set_ylabel("GW at year end")
     right.legend(loc="upper left", fontsize=10, ncol=4)
-    right.set_title("Installed capacity", loc="left", color=INK, fontsize=12)
+    right.set_title("Installed capacity")
     save(fig, "hydro_capacity.png",
          f"In {low} BC's hydro fleet produced {cf[low]:.0f}% of what it could, the least of any year since "
          f"{cf.index.min()}",
@@ -596,12 +597,12 @@ def main():
     left.set_xticks([0, 6, 12, 18, 23], ["midnight", "6 am", "noon", "6 pm", "11 pm"])
     left.set_ylabel("MW into BC (negative: out of BC)")
     left.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=9, ncol=5)
-    left.set_title("Average flow by hour of the day (5-9 pm shaded)", loc="left", color=INK, fontsize=12)
+    left.set_title("Average flow by hour of the day (5-9 pm shaded)")
     share = by_year.share_hours_importing.loc[FLOWS_BASELINE[0]:] * 100
     right.bar(share.index, share, color=[RED if s > 50 else BLUE for s in share], width=0.7)
     right.axhline(50, color=MUTED, lw=0.8)
     right.set_ylabel("% of hours")
-    right.set_title("Hours BC was importing", loc="left", color=INK, fontsize=12)
+    right.set_title("Hours BC was importing")
     save(fig, "hourly_flows.png",
          "Even in the drought, BC imported least at the morning and evening peaks",
          "Hourly flow between the Bonneville Power Administration and BC Hydro, by Pacific hour",

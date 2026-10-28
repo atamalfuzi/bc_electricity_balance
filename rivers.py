@@ -129,8 +129,7 @@ def main():
     left.set_ylim(1700, fraser.max() * 1.1)
     left.set_ylabel("Mean flow over the year, m³/s")
     left.legend(loc="upper left", fontsize=9, ncol=3)
-    left.set_title(f"Fraser River at Hope, {fraser.index.min()}-{fraser.index.max()} (five lowest coloured)",
-                   loc="left", color=INK, fontsize=12)
+    left.set_title(f"Fraser River at Hope, {fraser.index.min()}-{fraser.index.max()} (five lowest coloured)")
     n = len(fraser)
     shape, loc, scale = stats.lognorm.fit(fraser.values, floc=0)
     grid = np.logspace(0.05, np.log10(300), 100)
@@ -147,7 +146,7 @@ def main():
     right.set_xlabel("Return period, years (a year this low or lower)")
     right.legend(loc="upper right", fontsize=9)
     right.set_ylim(1650, None)
-    right.set_title("How rare a low year is", loc="left", color=INK, fontsize=12)
+    right.set_title("How rare a low year is")
     driest = two_year.idxmin() == drought_years[-1] if drought_years else False
     balance.save(fig, "river_history.png",
                  f"2023 was the Fraser's {'second-' if rank.get(2023) == 2 else ''}lowest year since {fraser.index.min()}"
@@ -163,8 +162,7 @@ def main():
     left.plot(d.index, d.held_out, color=GREY, lw=1.8, ls="--", label="Model, each year predicted without it")
     left.set_ylabel("TWh a year")
     left.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2, fontsize=9)
-    left.set_title(f"Hydro output and the inflow model (R² {fit.rsquared:.2f}, held-out error {rmse:.1f} TWh)",
-                   loc="left", color=INK, fontsize=12)
+    left.set_title(f"Hydro output and the inflow model (R² {fit.rsquared:.2f}, held-out error {rmse:.1f} TWh)")
     x, w = np.arange(len(parts)), 0.26
     right.bar(x - w, -parts.hydro_change, w, color=BLUE, label="Fall in hydro output")
     right.bar(x, parts.from_low_inflows, w, color=GREY, label="Explained by low inflows (90% range)",
@@ -173,7 +171,7 @@ def main():
     right.set_xticks(x, parts.index)
     right.set_ylabel(f"TWh against {balance.BASELINE[0]}-{balance.BASELINE[1]} average")
     right.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=9)
-    right.set_title("The drought years", loc="left", color=INK, fontsize=12)
+    right.set_title("The drought years")
     balance.save(fig, "water_to_power.png",
                  f"Low river inflows explain about {parts.from_low_inflows[2023]:.0f} TWh of the "
                  f"{-parts.hydro_change[2023]:.0f} TWh fall in BC's hydro output in 2023",

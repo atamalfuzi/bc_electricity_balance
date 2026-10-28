@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 import balance
-from balance import BLUE, GREEN, GREY, INK, MUTED, ORANGE, RED
+from balance import BLUE, GREEN, GREY, MUTED, ORANGE, RED
 
 SITE = Path("site")
 URL = "https://atamalfuzi.github.io/bc_electricity_balance/"
@@ -164,12 +164,12 @@ def figures(b, expected_mw, d, f):
     left.plot(months, b.hydro[recent], color=BLUE, lw=2.2, label="Hydro output")
     left.set_ylabel("GWh a month")
     left.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=10, ncol=3)
-    left.set_title("Hydro generation against its usual range", loc="left", color=INK, fontsize=12)
+    left.set_title("Hydro generation against its usual range")
     net = b.net_imports[recent]
     right.bar(months, net, width=25, color=[RED if v > 0 else GREEN for v in net])
     right.axhline(0, color=MUTED, lw=0.8)
     right.set_ylabel("GWh a month")
-    right.set_title("Net imports (red) and net exports (green)", loc="left", color=INK, fontsize=12)
+    right.set_title("Net imports (red) and net exports (green)")
     for ax in (left, right):
         years_axis(ax)
     balance.save(fig, "recent_supply.png", "Hydro output and net imports, last three years",
