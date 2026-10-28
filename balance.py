@@ -259,17 +259,26 @@ def annual_twh(mw):
     return year.sum()[year.count() == 12]
 
 
+def full_years(frame):
+    """Sums over the calendar years in which every column has all 12 months."""
+    year = frame.groupby(frame.index.year)
+    return year.sum()[year.count().min(axis=1) == 12]
+
+
 # The drought ----
 BASELINE = (2013, 2022)  # the ten years before the drought
+
+
+def yearly(b, normal_mw):
+    """The balance in TWh for each full year, with weather-normalised demand and the weather's part."""
+    year = (full_years(b) / 1000).assign(normalised=annual_twh(normal_mw)).rename_axis("year")
+    return year.assign(weather=year.demand - year.normalised)
 
 
 def drought(b, normal_mw):
     """Each year's change from the baseline average in net imports (receipts minus deliveries), and its parts:
     net imports = demand - hydro - other generation, and demand = weather-normalised demand + weather."""
-    full = b.groupby(b.index.year).count().min(axis=1) == 12
-    year = b.groupby(b.index.year).sum()[full] / 1000  # TWh
-    year["normalised"] = annual_twh(normal_mw)
-    year["weather"] = year.demand - year.normalised
+    year = yearly(b, normal_mw)
     change = year - year.loc[BASELINE[0]:BASELINE[1]].mean()
     return pd.DataFrame({"net_imports": change.net_imports, "demand_growth": change.normalised,
                          "weather": change.weather, "less_hydro": -change.hydro,
@@ -278,8 +287,7 @@ def drought(b, normal_mw):
 
 def trade_by_year(t):
     """Annual BC-US trade: TWh, millions of dollars and average price ($ per MWh) each way."""
-    full = t.groupby(t.index.year).count().min(axis=1) == 12
-    y = t.groupby(t.index.year).sum()[full]
+    y = full_years(t)
     return y.assign(export_twh=y.export_gwh / 1000, import_twh=y.import_gwh / 1000,
                     export_price=y.export_value / y.export_gwh * 1000, import_price=y.import_value / y.import_gwh * 1000,
                     net_value=y.export_value - y.import_value)
@@ -402,10 +410,7 @@ def main():
     d = monthly(b, weather())
     fit = demand_model(d)
     normal_mw = normalised(d, fit)
-    full = b.groupby(b.index.year).count().min(axis=1) == 12
-    annual = (b.groupby(b.index.year).sum()[full] / 1000).assign(
-        normalised=annual_twh(normal_mw)).rename_axis("year")
-    annual["weather"] = annual.demand - annual.normalised
+    annual = yearly(b, normal_mw)
     cap = capacity()
     annual["hydro_capacity_mw"] = cap["Hydraulic turbine"]
     annual["hydro_capacity_factor"] = capacity_factor(annual.hydro, annual.hydro_capacity_mw)

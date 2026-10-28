@@ -80,9 +80,7 @@ def low_water(fit, d, annual, years=(2023, 2024), baseline=balance.BASELINE):
 
 
 def main():
-    b = balance.balance()
-    full = b.groupby(b.index.year).count().min(axis=1) == 12
-    annual = b.groupby(b.index.year).sum()[full] / 1000
+    annual = balance.full_years(balance.balance()) / 1000
     fraser = annual_mean(river(FRASER))
     gauges = pd.DataFrame({name: annual_mean(river(s)) for name, s in INFLOWS.items()})
     inflow = (gauges / gauges.loc[NORMAL[0]:NORMAL[1]].mean()).mean(axis=1, skipna=False)  # 1 = normal
