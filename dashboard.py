@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 import balance
-from balance import BLUE, GREEN, GREY, MUTED, ORANGE, RED
+from balance import BLUE, GREEN, GREY, MUTED, ORANGE, RED, gwh
 
 SITE = Path("site")
 URL = "https://atamalfuzi.github.io/bc_electricity_balance/"
@@ -37,11 +37,6 @@ def series():
     expected = pd.Series(kalman.fittedvalues, index=d.index)  # one month ahead, given that month's weather
     normal = balance.normalised(d, balance.demand_model(d))
     return b, t, d, expected, normal, balance.flows()
-
-
-def gwh(mw):
-    """Monthly average MW to GWh in the month."""
-    return mw * 24 * mw.index.days_in_month / 1000
 
 
 def summary(b, t, expected_mw, normal_mw):

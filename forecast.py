@@ -14,7 +14,7 @@ from statsmodels.tsa.exponential_smoothing.ets import ETSModel
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 import balance
-from balance import BLUE, GREY, INK, MUTED, ORANGE, RED
+from balance import BLUE, GREY, INK, MUTED, ORANGE, RED, gwh
 
 FIT_FROM = "2000-01"
 FIRST_ORIGIN = "2014-12"
@@ -22,10 +22,6 @@ H = 6
 BEST = "Seasonal ARIMA with weather"
 SOURCE = ("Source: Statistics Canada tables 25-10-0001-01, 25-10-0015-01 and 25-10-0016-01; Government of Canada "
           "daily climate data.")
-
-
-def gwh(mw, months):
-    return mw * 24 * months.days_in_month / 1000
 
 
 def models(y, X, future_X, steps=H):
@@ -108,7 +104,7 @@ def main():
     cover, widths = conformal(bt, BEST)
     y = d.load.loc[FIT_FROM:]
     ahead = pd.period_range(y.index[-1] + 1, periods=H, freq="M")
-    mean = gwh(models(y, d.loc[y.index, ["hdd", "cdd"]], normal_weather(d, ahead))[BEST]["mean"], ahead)
+    mean = gwh(models(y, d.loc[y.index, ["hdd", "cdd"]], normal_weather(d, ahead))[BEST]["mean"])
     fan = pd.DataFrame({"mean": mean, **{f"{q}_{a}": mean * (1 + s * widths[a].to_numpy())
                                          for a in (80, 95) for q, s in (("low", -1), ("high", 1))}})
     ranges = weather_ranges(d, balance.demand_model(d))
@@ -128,7 +124,7 @@ def main():
     names, colours = ["Same month last year", "Exponential smoothing", BEST], [GREY, ORANGE, BLUE]
     fig, (left, right) = plt.subplots(1, 2, figsize=(12, 5.6), gridspec_kw={"width_ratios": [1.5, 1]})
     fig.subplots_adjust(top=0.79, bottom=0.25, wspace=0.22)
-    hist = gwh(y.iloc[-36:], y.index[-36:])
+    hist = gwh(y.iloc[-36:])
     x_hist, x_fan = hist.index.to_timestamp(), ahead.to_timestamp()
     left.plot(x_hist, hist, color=INK, lw=2, label="Actual")
     left.fill_between(x_fan, fan.low_95, fan.high_95, color=BLUE, alpha=0.15, lw=0, label="95% range")

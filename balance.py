@@ -252,6 +252,11 @@ def normalised(d, fit):
     return d.load - actual + normal
 
 
+def gwh(mw):
+    """Monthly average MW to GWh in the month."""
+    return mw * 24 * mw.index.days_in_month / 1000
+
+
 def annual_twh(mw):
     """Monthly average MW to annual TWh, full years only."""
     twh = mw * 24 * mw.index.days_in_month / 1e6
